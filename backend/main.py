@@ -1,6 +1,98 @@
-def main():
-    print("Hello from backend!")
+from typing import Union, Dict
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_ollama.llms import OllamaLLM
+from fastapi import FastAPI
+from pydantic import BaseModel
+import re
+
+app = FastAPI()
 
 
-if __name__ == "__main__":
-    main()
+# Pydantic model for the POST request
+class CodeExplanationRequest(BaseModel):
+    language: str
+    code_snippet: str
+    user_explanation: str
+
+
+# Optional: Response model for structured output
+class CodeExplanationResponse(BaseModel):
+    language: str
+    code_snippet: str
+    user_explanation: str
+    ai_feedback: str
+
+
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
+
+
+@app.get("/items/{item_id}")
+def read_item(item_id: int, q: Union[str, None] = None):
+    return {"item_id": item_id, "q": q}
+
+
+def split_think_content(text: str) -> Dict[str, str]:
+    """Split content into think section and response section"""
+    think_pattern = r'<think>(.*?)</think>'
+    think_match = re.search(think_pattern, text, re.DOTALL)
+    think_content = think_match.group(1).strip() if think_match else ""
+    response_content = re.sub(think_pattern, "", text, flags=re.DOTALL).strip()
+
+    return {
+        "think": think_content,
+        "response": response_content
+    }
+
+
+@app.get("/generate/{language}")
+def generate_code_question(language: str):
+    template = """Generate a simple code snippet in {language} that demonstrates a basic concept or functionality. 
+
+    Provide only the code snippet without any explanation."""
+
+    prompt = ChatPromptTemplate.from_template(template)
+    model = OllamaLLM(model="magistral")
+    chain = prompt | model
+    result = chain.invoke({"language": language})
+
+    split_content = split_think_content(result)
+
+    return {
+        "language": language,
+        "think_content": split_content["think"],
+        "code_snippet": split_content["response"]
+    }
+
+
+@app.post("/explain-code")
+def explain_code(request: CodeExplanationRequest):
+    """Endpoint to evaluate user's explanation of code snippet"""
+
+    template = """You are a programming instructor. A student has provided a {language} code snippet and their explanation of what it does.
+
+Code snippet:
+{code_snippet}
+
+Student's explanation:
+{user_explanation}
+
+Please provide feedback on their explanation. Is it accurate? What did they miss? What could be improved?"""
+
+    prompt = ChatPromptTemplate.from_template(template)
+    model = OllamaLLM(model="magistral")
+    chain = prompt | model
+
+    result = chain.invoke({
+        "language": request.language,
+        "code_snippet": request.code_snippet,
+        "user_explanation": request.user_explanation
+    })
+
+    return CodeExplanationResponse(
+        language=request.language,
+        code_snippet=request.code_snippet,
+        user_explanation=request.user_explanation,
+        ai_feedback=result
+    )
