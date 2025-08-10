@@ -17,6 +17,11 @@ html {
   line-height: 1.4;
 }
 
+body {
+  background-color: #c0c0c0; /* Windows 98 style grey */
+  padding: 20px;
+}
+
 /*
  * Remove text-shadow in selection highlight:
  * https://twitter.com/miketaylr/status/12228805301
@@ -80,9 +85,53 @@ textarea {
   resize: vertical;
 }
 
-/* ==========================================================================
-   Author's custom styles
-   ========================================================================== */
+/* Title bar styles */
+.title-bar-text {
+  text-align: center;
+}
+
+/* Page title styles */
+.page-title {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 2em;
+}
+
+/* Flex container styles */
+.flex-container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.flex-container > div {
+  flex: 1;
+  margin: 10px;
+  padding: 20px;
+  background-color: white;
+  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.3), inset -2px -2px 5px rgba(255, 255, 255, 0.5);
+  border: 1px solid #888;
+  border-radius: 3px;
+}
+
+/* htmx loading indicator styles */
+.htmx-indicator {
+  opacity: 0.5;
+}
+
+.htmx-request {
+  opacity: 0.5;
+}
+
+.htmx-request::after {
+  content: "Loading...";
+  display: block;
+  margin-top: 10px;
+  font-style: italic;
+}
 
 /* ==========================================================================
    Helper classes
@@ -243,5 +292,6 @@ textarea {
   h3 {
     page-break-after: avoid;
   }
-}
 
+  /* Print-specific styles for flex container */
+}
