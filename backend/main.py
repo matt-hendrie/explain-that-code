@@ -1,7 +1,7 @@
 from typing import Union, Dict
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from pydantic import BaseModel
 import re
 from os import getenv
@@ -46,7 +46,7 @@ def split_think_content(text: str) -> Dict[str, str]:
 
 
 @app.get("/generate/{language}")
-def generate_code_question(language: str):
+def generate_code_question(language: str, request: Request):
     template = """Write a self-contained code snippet (20 ± 5` logical lines, bug-free) in {language}.
 It should: 
 
@@ -70,11 +70,23 @@ Do not supply any further explanation."""
 
     split_content = split_think_content(result.content)
 
-    return {
-        "language": language,
-        "think_content": split_content["think"],
-        "code_snippet": split_content["response"]
-    }
+    # Backend modification - detect content type or create separate endpoint
+    if request.headers.get("accept") == "text/html":
+        print("hello")
+        return f"""
+        <div class="code-display">
+            <div class="language-badge">{language}</div>
+            <div class="code-block">
+                <pre><code>{split_content["response"]}</code></pre>
+            </div>
+        </div>
+        """
+    else:
+        return {
+            "language": language,
+            "think_content": split_content["think"],
+            "code_snippet": split_content["response"]
+        }
 
 
 @app.post("/explain-code")
